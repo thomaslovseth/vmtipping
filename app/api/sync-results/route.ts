@@ -7,7 +7,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Map fra api-football lagnavn -> våre norske navn
 const TEAM_MAP: Record<string, string> = {
   'Mexico': 'Mexico',
   'South Korea': 'Sør-Korea',
@@ -66,46 +65,36 @@ function normalizeTeam(name: string): string {
   return TEAM_MAP[name] ?? name
 }
 
-// Finn match_id basert på hjemme- og bortelag
 function findMatchId(home: string, away: string): string | null {
   const normHome = normalizeTeam(home)
   const normAway = normalizeTeam(away)
-
-  const groupMatch = GROUP_MATCHES.find(
-    m => m.home === normHome && m.away === normAway
-  )
+  const groupMatch = GROUP_MATCHES.find(m => m.home === normHome && m.away === normAway)
   if (groupMatch) return groupMatch.id
-
-  const koMatch = KO_MATCHES.find(
-    m => m.home === normHome && m.away === normAway
-  )
+  const koMatch = KO_MATCHES.find(m => m.home === normHome && m.away === normAway)
   if (koMatch) return koMatch.id
-
   return null
 }
 
 export async function GET(request: Request) {
-  // Sjekk at kallet kommer fra Vercel Cron eller admin
+  // Vercel sender CRON_SECRET automatisk som Bearer token
   const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET
+
+  // Tillat både Vercel cron og manuell kjøring fra admin
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    // Hent alle ferdige kamper fra api-football
     const res = await fetch(
       'https://v3.football.api-sports.io/fixtures?league=1&season=2026&status=FT',
       {
-        headers: {
-          'x-apisports-key': process.env.API_FOOTBALL_KEY!,
-        },
-        next: { revalidate: 0 },
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
+        cache: 'no-store',
       }
     )
 
-    if (!res.ok) {
-      throw new Error(`API-Football feil: ${res.status}`)
-    }
+    if (!res.ok) throw new Error(`API-Football feil: ${res.status}`)
 
     const data = await res.json()
     const fixtures = data.response ?? []
