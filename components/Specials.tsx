@@ -36,10 +36,10 @@ export default function Specials({ userId }: { userId: string }) {
     <div>
       <div className="section-title">⭐ Spesialtips</div>
       <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 16 }}>
-        Svar med * låses når VM starter 11. juni.
+        ⚠️ Alle spesialer låses når VM starter 11. juni kl. 21:00!
       </p>
       {SPECIALS.map(s => {
-        const locked = s.lockAtStart && vmStarted
+        const locked = vmStarted
         const val = answers[s.id] ?? ''
         return (
           <div className="special-card" key={s.id}>
