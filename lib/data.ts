@@ -143,7 +143,7 @@ const TOPSCORER_OPTIONS = [
   'Lionel Messi (Argentina)','Jude Bellingham (England)','Pedri (Spania)',
   'Mohamed Salah (Egypt)','Raphinha (Brasil)','Phil Foden (England)',
   'Antoine Griezmann (Frankrike)','Martin Ødegaard (Norge)','Bukayo Saka (England)',
-  'Michael Olise (Frankrike)','Annen spiller',
+  'Michael Olise (Frankrike)',
 ]
 
 const KEEPER_OPTIONS = [
