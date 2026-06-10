@@ -160,7 +160,6 @@ export const SPECIALS: SpecialDef[] = [
   {id:'sp_finalist',label:'🥈 VM-finalist (taper)',desc:'Hvilket lag taper finalen?',type:'select',options:ALL_TEAMS,lockAtStart:true,points:12},
   {id:'sp_golden_glove',label:'🧤 Golden Glove (Beste keeper)',desc:'Hvem vinner prisen for beste keeper i VM?',type:'select',options:KEEPER_OPTIONS,lockAtStart:true,points:10},
   {id:'sp_norge_exit',label:'🇳🇴 Norges beste runde',desc:'Hvor langt kommer Norge i VM?',type:'radio',options:['Gruppespill','Runde av 32','Runde av 16','Kvartfinale','Semifinale','Finale','🏆 Vinner'],lockAtStart:true,points:10},
-  {id:'sp_surprise',label:'😲 Overraskelseslaget',desc:'Hvilket lag overrasker mest og når kvartfinale eller videre?',type:'select',options:ALL_TEAMS,lockAtStart:true,points:10},
   {id:'sp_no_goal',label:'🧱 Flest nullere',desc:'Hvilket lag holder flest kamper uten baklengsmål?',type:'select',options:ALL_TEAMS,lockAtStart:true,points:10},
   {id:'sp_hattrick_final',label:'🎩 Hattrick i finalen?',desc:'Scorer noen hattrick i VM-finalen?',type:'radio',options:['Ja','Nei'],lockAtStart:false,points:8},
   {id:'sp_ronaldo_red',label:'🟥 Får Ronaldo rødt kort?',desc:'Får Cristiano Ronaldo rødt kort i VM?',type:'radio',options:['Ja','Nei'],lockAtStart:false,points:8},
