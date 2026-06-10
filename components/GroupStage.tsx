@@ -1,20 +1,18 @@
-// components/GroupStage.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GROUP_MATCHES, GROUPS } from '@/lib/data'
 import MatchCard from './MatchCard'
-import type { Pick } from '@/types'
 
 export default function GroupStage({ userId }: { userId: string }) {
-  const [picks, setPicks] = useState<Record<string, Pick>>({})
+  const [picks, setPicks] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('picks').select('*').eq('user_id', userId).then(({ data }) => {
-      const map: Record<string, Pick> = {}
-      data?.forEach(p => { map[p.match_id] = p })
+    supabase.from('picks').select('match_id,pick').eq('user_id', userId).then(({ data }) => {
+      const map: Record<string, string> = {}
+      data?.forEach(p => { if (p.pick) map[p.match_id] = p.pick })
       setPicks(map)
       setLoading(false)
     })
@@ -30,8 +28,7 @@ export default function GroupStage({ userId }: { userId: string }) {
           {GROUP_MATCHES.filter(m => m.group === g).map(m => (
             <MatchCard
               key={m.id} match={m} userId={userId}
-              initialHome={picks[m.id]?.home_score ?? null}
-              initialAway={picks[m.id]?.away_score ?? null}
+              initialPick={picks[m.id] ?? null}
             />
           ))}
         </div>
