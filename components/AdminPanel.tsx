@@ -5,21 +5,21 @@ import { supabase } from '@/lib/supabase'
 import { GROUP_MATCHES, KO_MATCHES, SPECIALS } from '@/lib/data'
 import type { SpecialResult } from '@/types'
 
+interface MatchResultState {
+  home_score: number | null
+  away_score: number | null
+}
+
 export default function AdminPanel() {
-  const [results, setResults] = useState<Record<string, string>>({})
+  const [results, setResults] = useState<Record<string, MatchResultState>>({})
   const [spResults, setSpResults] = useState<Record<string, SpecialResult>>({})
   const [saved, setSaved] = useState<Record<string, boolean>>({})
   const [savedSp, setSavedSp] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     supabase.from('match_results').select('*').then(({ data }) => {
-      const map: Record<string, string> = {}
-      data?.forEach(r => {
-        if (r.home_score !== null && r.away_score !== null) {
-          const rh = r.home_score, ra = r.away_score
-          map[r.match_id] = rh > ra ? 'H' : ra > rh ? 'B' : 'U'
-        }
-      })
+      const map: Record<string, MatchResultState> = {}
+      data?.forEach(r => { map[r.match_id] = { home_score: r.home_score, away_score: r.away_score } })
       setResults(map)
     })
     supabase.from('special_results').select('*').then(({ data }) => {
@@ -29,15 +29,24 @@ export default function AdminPanel() {
     })
   }, [])
 
-  async function saveResult(matchId: string, pick: string, isKO: boolean) {
-    // Store as score equivalent: H=1-0, U=0-0, B=0-1
-    const home = pick === 'H' ? 1 : 0
-    const away = pick === 'B' ? 1 : 0
-    setResults(prev => ({ ...prev, [matchId]: pick }))
+  async function saveResult(matchId: string, side: 'home' | 'away', val: string) {
+    const current = results[matchId] ?? { home_score: null, away_score: null }
+    const updated = {
+      ...current,
+      [side === 'home' ? 'home_score' : 'away_score']: val === '' ? null : parseInt(val),
+    }
+    setResults(prev => ({ ...prev, [matchId]: updated }))
     await supabase.from('match_results').upsert(
-      { match_id: matchId, home_score: home, away_score: away, updated_at: new Date().toISOString() },
+      { match_id: matchId, ...updated, updated_at: new Date().toISOString() },
       { onConflict: 'match_id' }
     )
+    setSaved(prev => ({ ...prev, [matchId]: true }))
+    setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 1200)
+  }
+
+  async function clearResult(matchId: string) {
+    setResults(prev => { const n = { ...prev }; delete n[matchId]; return n })
+    await supabase.from('match_results').delete().eq('match_id', matchId)
     setSaved(prev => ({ ...prev, [matchId]: true }))
     setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 1200)
   }
@@ -50,45 +59,49 @@ export default function AdminPanel() {
     setTimeout(() => setSavedSp(prev => ({ ...prev, [id]: false })), 1200)
   }
 
-  const btnStyle = (matchId: string, val: string, isKO: boolean): React.CSSProperties => {
-    const active = results[matchId] === val
-    const color = val === 'H' ? '#00c853' : val === 'U' ? '#FFD700' : '#1e90ff'
-    return {
-      padding: '8px 16px',
-      fontWeight: 700,
-      fontSize: '0.9rem',
-      borderRadius: 7,
-      cursor: 'pointer',
-      background: active ? color : 'var(--mid)',
-      color: active ? '#000' : 'var(--muted)',
-      border: `1px solid ${active ? color : 'var(--border)'}`,
-      transition: 'all 0.15s',
-    }
+  const inputStyle: React.CSSProperties = {
+    width: 48, height: 36, background: 'var(--mid)',
+    border: '1px solid var(--border)', borderRadius: 7,
+    color: 'var(--text)', textAlign: 'center', fontSize: '1rem',
   }
 
   const KO_ROUNDS = ['Runde av 32', 'Runde av 16', 'Kvartfinale', 'Semifinale', 'Bronsefinale', 'FINALE']
 
   return (
     <div>
-      <div className="section-title">⚙️ Admin – Legg inn fasit</div>
+      <div className="section-title">⚙️ Admin – Legg inn / endre fasit</div>
       <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginBottom: 16 }}>
-        Klikk H, U eller B for å sette fasitresultat. Poengtavlen oppdateres umiddelbart.
+        Legg inn målresultat direkte. Slett for å fjerne feilregistrering. Poengtavlen oppdateres umiddelbart.
       </p>
 
       {/* GRUPPESPILL */}
       <div className="admin-card">
         <h3>📋 Gruppespill</h3>
-        {GROUP_MATCHES.map(m => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <label style={{ flex: 1, fontSize: '0.85rem' }}>{m.home} – {m.away}</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['H', 'U', 'B'].map(v => (
-                <button key={v} style={btnStyle(m.id, v, false)} onClick={() => saveResult(m.id, v, false)}>{v}</button>
-              ))}
+        {GROUP_MATCHES.map(m => {
+          const r = results[m.id]
+          return (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+              <label style={{ flex: 1, fontSize: '0.82rem', minWidth: 140 }}>{m.home} – {m.away}</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input style={inputStyle} type="number" min={0} max={20}
+                  value={r?.home_score ?? ''} placeholder="H"
+                  onChange={e => saveResult(m.id, 'home', e.target.value)} />
+                <span style={{ color: 'var(--muted)' }}>–</span>
+                <input style={inputStyle} type="number" min={0} max={20}
+                  value={r?.away_score ?? ''} placeholder="B"
+                  onChange={e => saveResult(m.id, 'away', e.target.value)} />
+                {r && (
+                  <button onClick={() => clearResult(m.id)} style={{
+                    background: 'rgba(255,23,68,0.1)', border: '1px solid rgba(255,23,68,0.3)',
+                    color: '#ff6b6b', borderRadius: 6, padding: '6px 10px',
+                    cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700,
+                  }}>Slett</button>
+                )}
+                {saved[m.id] && <span style={{ fontSize: '0.75rem', color: 'var(--green)' }}>✓</span>}
+              </div>
             </div>
-            {saved[m.id] && <span style={{ fontSize: '0.75rem', color: 'var(--green)' }}>✓</span>}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* SLUTTSPILL */}
@@ -98,17 +111,31 @@ export default function AdminPanel() {
         return (
           <div className="admin-card" key={round}>
             <h3>⚔️ {round}</h3>
-            {matches.map(m => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <label style={{ flex: 1, fontSize: '0.85rem' }}>{m.home} – {m.away}</label>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {['H', 'B'].map(v => (
-                    <button key={v} style={btnStyle(m.id, v, true)} onClick={() => saveResult(m.id, v, true)}>{v}</button>
-                  ))}
+            {matches.map(m => {
+              const r = results[m.id]
+              return (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <label style={{ flex: 1, fontSize: '0.82rem', minWidth: 140 }}>{m.home} – {m.away}</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input style={inputStyle} type="number" min={0} max={20}
+                      value={r?.home_score ?? ''} placeholder="H"
+                      onChange={e => saveResult(m.id, 'home', e.target.value)} />
+                    <span style={{ color: 'var(--muted)' }}>–</span>
+                    <input style={inputStyle} type="number" min={0} max={20}
+                      value={r?.away_score ?? ''} placeholder="B"
+                      onChange={e => saveResult(m.id, 'away', e.target.value)} />
+                    {r && (
+                      <button onClick={() => clearResult(m.id)} style={{
+                        background: 'rgba(255,23,68,0.1)', border: '1px solid rgba(255,23,68,0.3)',
+                        color: '#ff6b6b', borderRadius: 6, padding: '6px 10px',
+                        cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700,
+                      }}>Slett</button>
+                    )}
+                    {saved[m.id] && <span style={{ fontSize: '0.75rem', color: 'var(--green)' }}>✓</span>}
+                  </div>
                 </div>
-                {saved[m.id] && <span style={{ fontSize: '0.75rem', color: 'var(--green)' }}>✓</span>}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )
       })}
@@ -127,8 +154,8 @@ export default function AdminPanel() {
                 <div className="radio-group">
                   {s.options.map(opt => (
                     <label className="radio-opt" key={opt}>
-                      <input type="radio" name={`adm_${s.id}`} value={opt} defaultChecked={val === opt}
-                        onChange={() => saveSpecialResult(s.id, opt)} />
+                      <input type="radio" name={`adm_${s.id}`} value={opt}
+                        checked={val === opt} onChange={() => saveSpecialResult(s.id, opt)} />
                       <span>{opt}</span>
                     </label>
                   ))}
