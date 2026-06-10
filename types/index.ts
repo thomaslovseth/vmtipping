@@ -10,8 +10,7 @@ export interface Pick {
   id?: string
   user_id: string
   match_id: string
-  home_score: number | null
-  away_score: number | null
+  pick?: string
   updated_at?: string
 }
 
