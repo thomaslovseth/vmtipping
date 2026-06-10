@@ -1,30 +1,32 @@
-import type { Pick, MatchResult, Special, SpecialResult } from '@/types'
+import type { Special, SpecialResult } from '@/types'
 import { GROUP_MATCHES, KO_MATCHES, SPECIALS } from '@/lib/data'
 
 export function calcMatchPoints(
-  picks: Record<string, Pick>,
-  results: Record<string, MatchResult>
+  picks: Record<string, { pick?: string }>,
+  results: Record<string, { home_score: number | null; away_score: number | null }>
 ): number {
   let pts = 0
-  const allMatches = [
-    ...GROUP_MATCHES,
-    ...KO_MATCHES.filter(m => m.home && m.away)
-  ]
-  for (const m of allMatches) {
-    const pick = picks[m.id]
+
+  for (const m of GROUP_MATCHES) {
+    const pick = picks[m.id]?.pick
     const result = results[m.id]
-    if (!pick || !result) continue
-    const ph = pick.home_score, pa = pick.away_score
+    if (!pick || !result || result.home_score === null || result.away_score === null) continue
+
     const rh = result.home_score, ra = result.away_score
-    if (ph === null || pa === null || rh === null || ra === null) continue
-    if (ph === rh && pa === ra) {
-      pts += 3
-    } else {
-      const po = ph > pa ? 'H' : pa > ph ? 'A' : 'D'
-      const ro = rh > ra ? 'H' : ra > rh ? 'A' : 'D'
-      if (po === ro) pts += 1
-    }
+    const actual = rh > ra ? 'H' : ra > rh ? 'B' : 'U'
+    if (pick === actual) pts += 2
   }
+
+  for (const m of KO_MATCHES.filter(m => m.home && m.away)) {
+    const pick = picks[m.id]?.pick
+    const result = results[m.id]
+    if (!pick || !result || result.home_score === null || result.away_score === null) continue
+
+    const rh = result.home_score, ra = result.away_score
+    const actual = rh > ra ? 'H' : 'B' // ingen uavgjort i KO
+    if (pick === actual) pts += 3
+  }
+
   return pts
 }
 
@@ -36,9 +38,7 @@ export function calcSpecialPoints(
   for (const s of SPECIALS) {
     const myAnswer = (specials[s.id]?.answer ?? '').toLowerCase().trim()
     const correct = (specialResults[s.id]?.answer ?? '').toLowerCase().trim()
-    if (myAnswer && correct && myAnswer === correct) {
-      pts += s.points
-    }
+    if (myAnswer && correct && myAnswer === correct) pts += s.points
   }
   return pts
 }
