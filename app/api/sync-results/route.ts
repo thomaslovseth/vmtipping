@@ -8,46 +8,75 @@ const supabase = createClient(
 )
 
 const TEAM_MAP: Record<string, string> = {
-  'Mexico': 'Mexico', 'South Korea': 'Sør-Korea', 'South Africa': 'Sør-Afrika',
-  'Czech Republic': 'Tsjekkia', 'Czechia': 'Tsjekkia', 'Canada': 'Canada',
-  'Qatar': 'Qatar', 'Switzerland': 'Sveits', 'Bosnia': 'Bosnia-Hercegovina',
-  'Brazil': 'Brasil', 'Morocco': 'Marokko', 'Haiti': 'Haiti', 'Scotland': 'Skottland',
-  'USA': 'USA', 'United States': 'USA', 'Turkey': 'Tyrkia', 'Australia': 'Australia',
-  'Paraguay': 'Paraguay', 'Germany': 'Tyskland', "Ivory Coast": 'Elfenbenskysten',
-  "Côte d'Ivoire": 'Elfenbenskysten', 'Ecuador': 'Ecuador', 'Curacao': 'Curaçao',
-  'Netherlands': 'Nederland', 'Japan': 'Japan', 'Sweden': 'Sverige', 'Tunisia': 'Tunisia',
-  'Belgium': 'Belgia', 'Egypt': 'Egypt', 'Iran': 'Iran', 'New Zealand': 'New Zealand',
-  'Spain': 'Spania', 'Uruguay': 'Uruguay', 'Saudi Arabia': 'Saudi-Arabia',
-  'Cape Verde': 'Kapp Verde', 'France': 'Frankrike', 'Norway': 'Norge',
-  'Senegal': 'Senegal', 'Iraq': 'Irak', 'Argentina': 'Argentina', 'Algeria': 'Algeria',
-  'Austria': 'Østerrike', 'Jordan': 'Jordan', 'Portugal': 'Portugal',
-  'DR Congo': 'DR Kongo', 'England': 'England', 'Croatia': 'Kroatia',
-  'Colombia': 'Colombia', 'Uzbekistan': 'Uzbekistan', 'Ghana': 'Ghana', 'Panama': 'Panama',
+  'Mexico': 'Mexico',
+  'South Africa': 'Sør-Afrika',
+  'South Korea': 'Sør-Korea',
+  'Korea Republic': 'Sør-Korea',
+  'Czechia': 'Tsjekkia',
+  'Czech Republic': 'Tsjekkia',
+  'Canada': 'Canada',
+  'Bosnia-Herzegovina': 'Bosnia-Hercegovina',
+  'Qatar': 'Qatar',
+  'Switzerland': 'Sveits',
+  'Brazil': 'Brasil',
+  'Morocco': 'Marokko',
+  'Haiti': 'Haiti',
+  'Scotland': 'Skottland',
+  'United States': 'USA',
+  'USA': 'USA',
+  'Paraguay': 'Paraguay',
+  'Australia': 'Australia',
+  'Turkey': 'Tyrkia',
+  'Germany': 'Tyskland',
+  "Côte d'Ivoire": 'Elfenbenskysten',
+  'Ivory Coast': 'Elfenbenskysten',
+  'Ecuador': 'Ecuador',
+  'Curaçao': 'Curaçao',
+  'Curacao': 'Curaçao',
+  'Netherlands': 'Nederland',
+  'Sweden': 'Sverige',
+  'Japan': 'Japan',
+  'Tunisia': 'Tunisia',
+  'Belgium': 'Belgia',
+  'Egypt': 'Egypt',
+  'Iran': 'Iran',
+  'New Zealand': 'New Zealand',
+  'Spain': 'Spania',
+  'Uruguay': 'Uruguay',
+  'Saudi Arabia': 'Saudi-Arabia',
+  'Cape Verde': 'Kapp Verde',
+  'France': 'Frankrike',
+  'Norway': 'Norge',
+  'Senegal': 'Senegal',
+  'Iraq': 'Irak',
+  'Argentina': 'Argentina',
+  'Algeria': 'Algeria',
+  'Austria': 'Østerrike',
+  'Jordan': 'Jordan',
+  'Portugal': 'Portugal',
+  'DR Congo': 'DR Kongo',
+  'England': 'England',
+  'Croatia': 'Kroatia',
+  'Colombia': 'Colombia',
+  'Uzbekistan': 'Uzbekistan',
+  'Ghana': 'Ghana',
+  'Panama': 'Panama',
 }
 
 function norm(name: string): string {
   return TEAM_MAP[name] ?? name
 }
 
-// Map api-football round navn til våre runde-IDer
-function getRoundId(round: string, matchNum: number): string {
-  if (round.includes('Round of 32') || round.includes('1/16')) return `R32_${matchNum}`
-  if (round.includes('Round of 16') || round.includes('1/8')) return `R16_${matchNum}`
-  if (round.includes('Quarter')) return `QF${matchNum}`
-  if (round.includes('Semi')) return `SF${matchNum}`
-  if (round.includes('3rd') || round.includes('Third')) return '3RD'
-  if (round.includes('Final')) return 'FINAL'
-  return `KO_${matchNum}`
-}
-
-function getRoundLabel(round: string): string {
-  if (round.includes('Round of 32') || round.includes('1/16')) return 'Runde av 32'
-  if (round.includes('Round of 16') || round.includes('1/8')) return 'Runde av 16'
-  if (round.includes('Quarter')) return 'Kvartfinale'
-  if (round.includes('Semi')) return 'Semifinale'
-  if (round.includes('3rd') || round.includes('Third')) return 'Bronsefinale'
-  if (round.includes('Final')) return 'FINALE'
-  return round
+function getRoundLabel(stage: string): string {
+  switch (stage) {
+    case 'ROUND_OF_32': return 'Runde av 32'
+    case 'ROUND_OF_16': return 'Runde av 16'
+    case 'QUARTER_FINALS': return 'Kvartfinale'
+    case 'SEMI_FINALS': return 'Semifinale'
+    case 'THIRD_PLACE': return 'Bronsefinale'
+    case 'FINAL': return 'FINALE'
+    default: return stage
+  }
 }
 
 export async function GET(request: Request) {
@@ -58,68 +87,81 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Hent alle VM 2026-kamper (både pågående og ferdige)
     const res = await fetch(
-      'https://v3.football.api-sports.io/fixtures?league=1&season=2026',
+      'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
       {
-        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
+        headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY! },
         cache: 'no-store',
       }
     )
-    if (!res.ok) throw new Error(`API-Football feil: ${res.status}`)
+    if (!res.ok) throw new Error(`football-data.org feil: ${res.status}`)
 
     const data = await res.json()
-    const fixtures = data.response ?? []
+    const matches = data.matches ?? []
 
     let updatedResults = 0
     let updatedKO = 0
-    let skipped = 0
 
-    // Teller per runde for å generere unike IDer
+    // Teller per runde for unike IDer
     const roundCounters: Record<string, number> = {}
 
-    for (const fixture of fixtures) {
-      const home = fixture.teams?.home?.name
-      const away = fixture.teams?.away?.name
-      const homeGoals = fixture.goals?.home
-      const awayGoals = fixture.goals?.away
-      const status = fixture.fixture?.status?.short // FT, NS, 1H, 2H, HT, etc.
-      const date = fixture.fixture?.date
-      const round = fixture.league?.round ?? ''
+    for (const match of matches) {
+      const home = norm(match.homeTeam?.name ?? '')
+      const away = norm(match.awayTeam?.name ?? '')
+      const status = match.status // TIMED, IN_PLAY, PAUSED, FINISHED
+      const stage = match.stage  // GROUP_STAGE, ROUND_OF_32, etc.
+      const date = match.utcDate
+      const homeGoals = match.score?.fullTime?.home
+      const awayGoals = match.score?.fullTime?.away
 
-      const normHome = norm(home)
-      const normAway = norm(away)
+      if (stage === 'GROUP_STAGE') {
+        // Finn match_id fra hardkodet data
+        const groupMatch = GROUP_MATCHES.find(
+          m => m.home === home && m.away === away
+        )
+        if (!groupMatch) continue
 
-      // Sjekk om dette er en gruppespillkamp
-      const isGroupMatch = GROUP_MATCHES.find(
-        m => m.home === normHome && m.away === normAway
-      )
-
-      if (isGroupMatch) {
-        // Lagre resultat hvis kampen er ferdig
-        if (status === 'FT' && homeGoals !== null && awayGoals !== null) {
+        // Lagre resultat hvis ferdig
+        if (status === 'FINISHED' && homeGoals !== null && awayGoals !== null) {
           await supabase.from('match_results').upsert(
-            { match_id: isGroupMatch.id, home_score: homeGoals, away_score: awayGoals, updated_at: new Date().toISOString() },
+            {
+              match_id: groupMatch.id,
+              home_score: homeGoals,
+              away_score: awayGoals,
+              updated_at: new Date().toISOString(),
+            },
             { onConflict: 'match_id' }
           )
           updatedResults++
         }
       } else {
-        // Sluttspillkamp – oppdater ko_matches med lag og evt. resultat
-        const roundKey = getRoundLabel(round)
-        roundCounters[roundKey] = (roundCounters[roundKey] ?? 0) + 1
-        const matchNum = roundCounters[roundKey]
-        const matchId = getRoundId(round, matchNum)
-        const roundLabel = getRoundLabel(round)
+        // Sluttspillkamp
+        const roundLabel = getRoundLabel(stage)
+        roundCounters[stage] = (roundCounters[stage] ?? 0) + 1
+        const matchNum = roundCounters[stage]
 
-        // Upsert sluttspillkamp med lag
+        // Generer match_id
+        const stagePrefix: Record<string, string> = {
+          'ROUND_OF_32': 'R32',
+          'ROUND_OF_16': 'R16',
+          'QUARTER_FINALS': 'QF',
+          'SEMI_FINALS': 'SF',
+          'THIRD_PLACE': '3RD',
+          'FINAL': 'FINAL',
+        }
+        const prefix = stagePrefix[stage] ?? 'KO'
+        const matchId = stage === 'FINAL' || stage === 'THIRD_PLACE'
+          ? prefix
+          : `${prefix}_${matchNum}`
+
+        // Upsert sluttspillkamp
         await supabase.from('ko_matches').upsert(
           {
             id: matchId,
             round: roundLabel,
             label: `${roundLabel} – Kamp ${matchNum}`,
-            home: normHome,
-            away: normAway,
+            home: home || null,
+            away: away || null,
             date: date,
             updated_at: new Date().toISOString(),
           },
@@ -128,9 +170,14 @@ export async function GET(request: Request) {
         updatedKO++
 
         // Lagre resultat hvis ferdig
-        if (status === 'FT' && homeGoals !== null && awayGoals !== null) {
+        if (status === 'FINISHED' && homeGoals !== null && awayGoals !== null) {
           await supabase.from('match_results').upsert(
-            { match_id: matchId, home_score: homeGoals, away_score: awayGoals, updated_at: new Date().toISOString() },
+            {
+              match_id: matchId,
+              home_score: homeGoals,
+              away_score: awayGoals,
+              updated_at: new Date().toISOString(),
+            },
             { onConflict: 'match_id' }
           )
           updatedResults++
@@ -142,8 +189,7 @@ export async function GET(request: Request) {
       success: true,
       updatedResults,
       updatedKO,
-      skipped,
-      total: fixtures.length,
+      total: matches.length,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
