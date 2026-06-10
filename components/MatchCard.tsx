@@ -62,28 +62,29 @@ export default function MatchCard({ match, userId, initialPick, isKO }: Props) {
     }, 300)
   }
 
-  const btnStyle = (val: string) => ({
-    flex: 1,
-    padding: '10px 0',
-    fontWeight: 700,
-    fontSize: '0.95rem',
-    border: 'none',
-    borderRadius: 8,
-    cursor: locked ? 'not-allowed' : 'pointer',
-    opacity: locked && pick !== val ? 0.4 : 1,
-    background: pick === val
-      ? val === 'H' ? '#00c853'
-        : val === 'U' ? '#FFD700'
-        : '#1e90ff'
-      : 'var(--mid)',
-    color: pick === val ? '#000' : 'var(--muted)',
-    border: `1px solid ${pick === val
-      ? val === 'H' ? '#00c853'
-        : val === 'U' ? '#FFD700'
-        : '#1e90ff'
-      : 'var(--border)'}`,
-    transition: 'all 0.15s',
-  } as React.CSSProperties)
+  const btnColor = (val: string) => {
+    if (pick !== val) return { bg: 'var(--mid)', border: 'var(--border)' }
+    if (val === 'H') return { bg: '#00c853', border: '#00c853' }
+    if (val === 'U') return { bg: '#FFD700', border: '#FFD700' }
+    return { bg: '#1e90ff', border: '#1e90ff' }
+  }
+
+  const btnStyle = (val: string): React.CSSProperties => {
+    const { bg, border } = btnColor(val)
+    return {
+      flex: 1,
+      padding: '10px 0',
+      fontWeight: 700,
+      fontSize: '0.95rem',
+      borderRadius: 8,
+      cursor: locked ? 'not-allowed' : 'pointer',
+      opacity: locked && pick !== val ? 0.4 : 1,
+      background: bg,
+      color: pick === val ? '#000' : 'var(--muted)',
+      border: `1px solid ${border}`,
+      transition: 'all 0.15s',
+    }
+  }
 
   return (
     <div className="match-card">
