@@ -1,22 +1,20 @@
-// components/Knockout.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { KO_MATCHES } from '@/lib/data'
 import MatchCard from './MatchCard'
-import type { Pick } from '@/types'
 
 const KO_ROUNDS = ['Runde av 32', 'Runde av 16', 'Kvartfinale', 'Semifinale', 'Bronsefinale', 'FINALE']
 
 export default function Knockout({ userId }: { userId: string }) {
-  const [picks, setPicks] = useState<Record<string, Pick>>({})
+  const [picks, setPicks] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('picks').select('*').eq('user_id', userId).then(({ data }) => {
-      const map: Record<string, Pick> = {}
-      data?.forEach(p => { map[p.match_id] = p })
+    supabase.from('picks').select('match_id,pick').eq('user_id', userId).then(({ data }) => {
+      const map: Record<string, string> = {}
+      data?.forEach(p => { if (p.pick) map[p.match_id] = p.pick })
       setPicks(map)
       setLoading(false)
     })
@@ -32,8 +30,7 @@ export default function Knockout({ userId }: { userId: string }) {
           {KO_MATCHES.filter(m => m.round === round).map(m => (
             <MatchCard
               key={m.id} match={m} userId={userId} isKO
-              initialHome={picks[m.id]?.home_score ?? null}
-              initialAway={picks[m.id]?.away_score ?? null}
+              initialPick={picks[m.id] ?? null}
             />
           ))}
         </div>
