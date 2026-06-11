@@ -54,7 +54,7 @@ export default function LoginScreen({ onLogin }: Props) {
     <div className="login-screen">
       <div className="login-logo">
         <div className="login-ball">⚽</div>
-        <h1>ØRST VM-TIPPING</h1>
+        <h1>fotballtipping.no</h1>
         <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginTop: 4 }}>
           FIFA World Cup 2026 · USA / Canada / Mexico
         </p>
