@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { GROUP_MATCHES, GROUPS } from '@/lib/data'
 import MatchCard from './MatchCard'
+import InfoBanner from './InfoBanner'
 
 export default function GroupStage({ userId }: { userId: string }) {
   const [picks, setPicks] = useState<Record<string, string>>({})
@@ -31,6 +32,11 @@ export default function GroupStage({ userId }: { userId: string }) {
 
   return (
     <div>
+      <InfoBanner
+        icon="⚽"
+        text="Tips resultatet på alle gruppespillkampene. Velg H (hjemmeseier), U (uavgjort) eller B (borteseier). Tippingen låses automatisk når kampen starter – du kan endre tipset ditt helt frem til avspark."
+        storageKey="info_gruppe"
+      />
       {Object.entries(GROUPS).map(([g, teams]) => (
         <div key={g}>
           <div className="section-title">⚽ Gruppe {g} — {teams.join(', ')}</div>
