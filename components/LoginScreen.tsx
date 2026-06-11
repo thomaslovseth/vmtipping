@@ -70,6 +70,11 @@ export default function LoginScreen({ onLogin }: Props) {
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={onKey} placeholder="••••••••" autoComplete="current-password" />
         </div>
         {isReg && (
+  <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: -8, marginBottom: 8, lineHeight: 1.5 }}>
+    ⚠️ Ikke bruk et passord du bruker andre steder – passord lagres ikke kryptert.
+  </p>
+)}
+        {isReg && (
           <div className="form-group">
             <label>Visningsnavn</label>
             <input value={displayName} onChange={e => setDisplayName(e.target.value)} onKeyDown={onKey} placeholder="f.eks. Thomas" />
