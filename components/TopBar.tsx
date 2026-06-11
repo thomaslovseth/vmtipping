@@ -10,7 +10,7 @@ export default function TopBar({ user, onLogout }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span>⚽</span>
         <div>
-          <div className="topbar-title">ØRST VM-TIPPING</div>
+          <div className="topbar-title">fotballtipping.no</div>
           <div className="topbar-user">{user.display_name}{user.is_admin ? ' 👑' : ''}</div>
         </div>
       </div>
