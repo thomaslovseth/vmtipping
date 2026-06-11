@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ØRST VM-TIPPING 2026',
-  description: 'FIFA World Cup 2026 tipping for Ørst-gjengen',
+  title: 'fotballtipping.no',
+  description: 'Nå: FIFA World Cup 2026',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
