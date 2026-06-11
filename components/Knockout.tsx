@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import MatchCard from './MatchCard'
+import InfoBanner from './InfoBanner'
 import type { KOMatch } from '@/types'
 
 const KO_ROUNDS = ['Runde av 32', 'Runde av 16', 'Kvartfinale', 'Semifinale', 'Bronsefinale', 'FINALE']
@@ -48,6 +49,11 @@ export default function Knockout({ userId }: { userId: string }) {
 
   return (
     <div>
+      <InfoBanner
+        icon="🏆"
+        text="Tips sluttspillkampene. Her er det kun H (hjemmeseier) eller B (borteseier) – ingen uavgjort i knockout! Lag som ikke er klare ennå fylles inn automatisk etterhvert som gruppespillet avsluttes. Riktig tips gir 3 poeng."
+        storageKey="info_sluttspill"
+      />
       {KO_ROUNDS.map(round => {
         const matches = koMatches.filter(m => m.round === round)
 
